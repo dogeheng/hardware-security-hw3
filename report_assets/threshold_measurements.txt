@@ -1,0 +1,326 @@
+[Receiver] Starting up...
+[Receiver] libc address = 0x71d1b483afc0
+
+--- Stats after 100000 iterations ---
+Flushed: count=50252 avg=908.34 cycles stddev=810.46 cycles
+Non-Flushed: count=49748 avg=402.42 cycles stddev=516.69 cycles
+
+--- Stats after 200000 iterations ---
+Flushed: count=100165 avg=897.05 cycles stddev=836.17 cycles
+Non-Flushed: count=99835 avg=405.42 cycles stddev=421.33 cycles
+
+--- Stats after 300000 iterations ---
+Flushed: count=150160 avg=904.52 cycles stddev=959.15 cycles
+Non-Flushed: count=149840 avg=406.37 cycles stddev=456.39 cycles
+
+--- Stats after 400000 iterations ---
+Flushed: count=199904 avg=905.57 cycles stddev=988.80 cycles
+Non-Flushed: count=200096 avg=408.34 cycles stddev=483.24 cycles
+
+--- Stats after 500000 iterations ---
+Flushed: count=249994 avg=923.67 cycles stddev=926.57 cycles
+Non-Flushed: count=250006 avg=406.11 cycles stddev=445.57 cycles
+
+--- Stats after 600000 iterations ---
+Flushed: count=300308 avg=915.66 cycles stddev=882.24 cycles
+Non-Flushed: count=299692 avg=399.03 cycles stddev=436.62 cycles
+
+--- Stats after 700000 iterations ---
+Flushed: count=350464 avg=905.14 cycles stddev=846.32 cycles
+Non-Flushed: count=349536 avg=393.50 cycles stddev=430.37 cycles
+
+--- Stats after 800000 iterations ---
+Flushed: count=400622 avg=897.07 cycles stddev=911.86 cycles
+Non-Flushed: count=399378 avg=390.55 cycles stddev=483.28 cycles
+
+--- Stats after 900000 iterations ---
+Flushed: count=450693 avg=892.32 cycles stddev=915.38 cycles
+Non-Flushed: count=449307 avg=388.15 cycles stddev=505.35 cycles
+
+--- Stats after 1000000 iterations ---
+Flushed: count=500804 avg=886.67 cycles stddev=885.67 cycles
+Non-Flushed: count=499196 avg=385.76 cycles stddev=533.93 cycles
+
+--- Stats after 1100000 iterations ---
+Flushed: count=550954 avg=882.21 cycles stddev=866.42 cycles
+Non-Flushed: count=549046 avg=383.56 cycles stddev=522.32 cycles
+
+--- Stats after 1200000 iterations ---
+Flushed: count=600841 avg=879.94 cycles stddev=848.64 cycles
+Non-Flushed: count=599159 avg=381.85 cycles stddev=535.19 cycles
+
+--- Stats after 1300000 iterations ---
+Flushed: count=650760 avg=890.73 cycles stddev=928.73 cycles
+Non-Flushed: count=649240 avg=381.26 cycles stddev=531.51 cycles
+
+--- Stats after 1400000 iterations ---
+Flushed: count=700602 avg=892.48 cycles stddev=907.48 cycles
+Non-Flushed: count=699398 avg=380.43 cycles stddev=562.14 cycles
+
+--- Stats after 1500000 iterations ---
+Flushed: count=750520 avg=888.79 cycles stddev=898.92 cycles
+Non-Flushed: count=749480 avg=379.27 cycles stddev=551.22 cycles
+
+--- Stats after 1600000 iterations ---
+Flushed: count=800363 avg=885.14 cycles stddev=880.75 cycles
+Non-Flushed: count=799637 avg=378.37 cycles stddev=555.09 cycles
+
+--- Stats after 1700000 iterations ---
+Flushed: count=850341 avg=882.41 cycles stddev=870.45 cycles
+Non-Flushed: count=849659 avg=377.44 cycles stddev=550.54 cycles
+
+--- Stats after 1800000 iterations ---
+Flushed: count=900228 avg=880.18 cycles stddev=856.68 cycles
+Non-Flushed: count=899772 avg=376.57 cycles stddev=539.80 cycles
+
+--- Stats after 1900000 iterations ---
+Flushed: count=950167 avg=877.86 cycles stddev=855.40 cycles
+Non-Flushed: count=949833 avg=375.88 cycles stddev=533.16 cycles
+
+--- Stats after 2000000 iterations ---
+Flushed: count=1000059 avg=875.52 cycles stddev=850.92 cycles
+Non-Flushed: count=999941 avg=375.08 cycles stddev=522.59 cycles
+
+--- Stats after 2100000 iterations ---
+Flushed: count=1050132 avg=874.58 cycles stddev=841.64 cycles
+Non-Flushed: count=1049868 avg=375.10 cycles stddev=515.47 cycles
+
+--- Stats after 2200000 iterations ---
+Flushed: count=1100200 avg=872.91 cycles stddev=829.38 cycles
+Non-Flushed: count=1099800 avg=374.57 cycles stddev=511.85 cycles
+
+--- Stats after 2300000 iterations ---
+Flushed: count=1150222 avg=871.06 cycles stddev=819.36 cycles
+Non-Flushed: count=1149778 avg=374.11 cycles stddev=513.44 cycles
+
+--- Stats after 2400000 iterations ---
+Flushed: count=1200056 avg=870.94 cycles stddev=815.99 cycles
+Non-Flushed: count=1199944 avg=373.67 cycles stddev=510.25 cycles
+
+--- Stats after 2500000 iterations ---
+Flushed: count=1249990 avg=871.63 cycles stddev=811.48 cycles
+Non-Flushed: count=1250010 avg=373.40 cycles stddev=513.44 cycles
+
+--- Stats after 2600000 iterations ---
+Flushed: count=1300096 avg=870.82 cycles stddev=821.88 cycles
+Non-Flushed: count=1299904 avg=372.99 cycles stddev=505.60 cycles
+
+--- Stats after 2700000 iterations ---
+Flushed: count=1350233 avg=870.15 cycles stddev=816.76 cycles
+Non-Flushed: count=1349767 avg=372.90 cycles stddev=504.37 cycles
+
+--- Stats after 2800000 iterations ---
+Flushed: count=1400297 avg=869.18 cycles stddev=809.03 cycles
+Non-Flushed: count=1399703 avg=372.93 cycles stddev=499.55 cycles
+
+--- Stats after 2900000 iterations ---
+Flushed: count=1450415 avg=868.79 cycles stddev=803.51 cycles
+Non-Flushed: count=1449585 avg=372.71 cycles stddev=507.70 cycles
+
+--- Stats after 3000000 iterations ---
+Flushed: count=1500390 avg=867.66 cycles stddev=799.77 cycles
+Non-Flushed: count=1499610 avg=372.44 cycles stddev=509.77 cycles
+
+--- Stats after 3100000 iterations ---
+Flushed: count=1550281 avg=866.63 cycles stddev=795.61 cycles
+Non-Flushed: count=1549719 avg=372.25 cycles stddev=503.23 cycles
+
+--- Stats after 3200000 iterations ---
+Flushed: count=1600211 avg=865.42 cycles stddev=790.21 cycles
+Non-Flushed: count=1599789 avg=371.94 cycles stddev=498.87 cycles
+
+--- Stats after 3300000 iterations ---
+Flushed: count=1650153 avg=865.45 cycles stddev=788.39 cycles
+Non-Flushed: count=1649847 avg=371.95 cycles stddev=503.60 cycles
+
+--- Stats after 3400000 iterations ---
+Flushed: count=1700005 avg=864.81 cycles stddev=785.18 cycles
+Non-Flushed: count=1699995 avg=371.74 cycles stddev=499.56 cycles
+
+--- Stats after 3500000 iterations ---
+Flushed: count=1749633 avg=864.16 cycles stddev=781.32 cycles
+Non-Flushed: count=1750367 avg=371.56 cycles stddev=504.06 cycles
+
+--- Stats after 3600000 iterations ---
+Flushed: count=1799582 avg=863.58 cycles stddev=782.43 cycles
+Non-Flushed: count=1800418 avg=371.42 cycles stddev=499.70 cycles
+
+--- Stats after 3700000 iterations ---
+Flushed: count=1849553 avg=863.11 cycles stddev=779.25 cycles
+Non-Flushed: count=1850447 avg=371.15 cycles stddev=496.33 cycles
+
+--- Stats after 3800000 iterations ---
+Flushed: count=1899473 avg=862.52 cycles stddev=775.36 cycles
+Non-Flushed: count=1900527 avg=371.25 cycles stddev=510.98 cycles
+
+--- Stats after 3900000 iterations ---
+Flushed: count=1949659 avg=861.69 cycles stddev=770.45 cycles
+Non-Flushed: count=1950341 avg=371.11 cycles stddev=518.56 cycles
+
+--- Stats after 4000000 iterations ---
+Flushed: count=1999769 avg=861.24 cycles stddev=765.84 cycles
+Non-Flushed: count=2000231 avg=370.96 cycles stddev=522.33 cycles
+
+--- Stats after 4100000 iterations ---
+Flushed: count=2049544 avg=860.72 cycles stddev=769.75 cycles
+Non-Flushed: count=2050456 avg=370.82 cycles stddev=524.80 cycles
+
+--- Stats after 4200000 iterations ---
+Flushed: count=2099607 avg=859.61 cycles stddev=765.10 cycles
+Non-Flushed: count=2100393 avg=370.50 cycles stddev=520.34 cycles
+
+--- Stats after 4300000 iterations ---
+Flushed: count=2149634 avg=858.97 cycles stddev=760.20 cycles
+Non-Flushed: count=2150366 avg=370.30 cycles stddev=524.42 cycles
+
+--- Stats after 4400000 iterations ---
+Flushed: count=2199596 avg=857.84 cycles stddev=757.39 cycles
+Non-Flushed: count=2200404 avg=370.05 cycles stddev=525.89 cycles
+
+--- Stats after 4500000 iterations ---
+Flushed: count=2249757 avg=857.48 cycles stddev=759.66 cycles
+Non-Flushed: count=2250243 avg=369.81 cycles stddev=527.38 cycles
+
+--- Stats after 4600000 iterations ---
+Flushed: count=2299754 avg=857.34 cycles stddev=759.16 cycles
+Non-Flushed: count=2300246 avg=369.56 cycles stddev=523.59 cycles
+
+--- Stats after 4700000 iterations ---
+Flushed: count=2349771 avg=856.76 cycles stddev=762.76 cycles
+Non-Flushed: count=2350229 avg=369.43 cycles stddev=524.11 cycles
+
+--- Stats after 4800000 iterations ---
+Flushed: count=2399601 avg=856.29 cycles stddev=801.62 cycles
+Non-Flushed: count=2400399 avg=369.33 cycles stddev=529.61 cycles
+
+--- Stats after 4900000 iterations ---
+Flushed: count=2449563 avg=856.20 cycles stddev=835.74 cycles
+Non-Flushed: count=2450437 avg=369.20 cycles stddev=531.78 cycles
+
+--- Stats after 5000000 iterations ---
+Flushed: count=2499525 avg=855.88 cycles stddev=838.02 cycles
+Non-Flushed: count=2500475 avg=369.12 cycles stddev=543.46 cycles
+
+--- Stats after 5100000 iterations ---
+Flushed: count=2549727 avg=855.51 cycles stddev=845.38 cycles
+Non-Flushed: count=2550273 avg=368.92 cycles stddev=542.36 cycles
+
+--- Stats after 5200000 iterations ---
+Flushed: count=2599578 avg=855.08 cycles stddev=853.08 cycles
+Non-Flushed: count=2600422 avg=368.79 cycles stddev=544.19 cycles
+
+--- Stats after 5300000 iterations ---
+Flushed: count=2649526 avg=854.68 cycles stddev=855.73 cycles
+Non-Flushed: count=2650474 avg=368.68 cycles stddev=545.89 cycles
+
+--- Stats after 5400000 iterations ---
+Flushed: count=2699446 avg=854.44 cycles stddev=854.14 cycles
+Non-Flushed: count=2700554 avg=368.64 cycles stddev=544.76 cycles
+
+--- Stats after 5500000 iterations ---
+Flushed: count=2749591 avg=853.72 cycles stddev=850.48 cycles
+Non-Flushed: count=2750409 avg=368.53 cycles stddev=548.87 cycles
+
+--- Stats after 5600000 iterations ---
+Flushed: count=2799707 avg=853.06 cycles stddev=847.36 cycles
+Non-Flushed: count=2800293 avg=368.35 cycles stddev=549.35 cycles
+
+--- Stats after 5700000 iterations ---
+Flushed: count=2849969 avg=852.50 cycles stddev=852.69 cycles
+Non-Flushed: count=2850031 avg=368.18 cycles stddev=546.37 cycles
+
+--- Stats after 5800000 iterations ---
+Flushed: count=2900032 avg=851.86 cycles stddev=849.21 cycles
+Non-Flushed: count=2899968 avg=368.02 cycles stddev=544.02 cycles
+
+--- Stats after 5900000 iterations ---
+Flushed: count=2950218 avg=851.82 cycles stddev=845.44 cycles
+Non-Flushed: count=2949782 avg=367.89 cycles stddev=541.80 cycles
+
+--- Stats after 6000000 iterations ---
+Flushed: count=3000155 avg=852.74 cycles stddev=842.61 cycles
+Non-Flushed: count=2999845 avg=367.94 cycles stddev=549.00 cycles
+
+--- Stats after 6100000 iterations ---
+Flushed: count=3050137 avg=852.38 cycles stddev=839.07 cycles
+Non-Flushed: count=3049863 avg=367.81 cycles stddev=546.83 cycles
+
+--- Stats after 6200000 iterations ---
+Flushed: count=3100238 avg=851.99 cycles stddev=835.22 cycles
+Non-Flushed: count=3099762 avg=367.68 cycles stddev=546.27 cycles
+
+--- Stats after 6300000 iterations ---
+Flushed: count=3150078 avg=851.59 cycles stddev=836.90 cycles
+Non-Flushed: count=3149922 avg=367.62 cycles stddev=542.77 cycles
+
+--- Stats after 6400000 iterations ---
+Flushed: count=3199966 avg=851.07 cycles stddev=834.05 cycles
+Non-Flushed: count=3200034 avg=367.57 cycles stddev=542.55 cycles
+
+--- Stats after 6500000 iterations ---
+Flushed: count=3249829 avg=850.32 cycles stddev=832.82 cycles
+Non-Flushed: count=3250171 avg=367.46 cycles stddev=542.43 cycles
+
+--- Stats after 6600000 iterations ---
+Flushed: count=3299689 avg=849.79 cycles stddev=829.05 cycles
+Non-Flushed: count=3300311 avg=367.31 cycles stddev=539.50 cycles
+
+--- Stats after 6700000 iterations ---
+Flushed: count=3349931 avg=849.52 cycles stddev=828.57 cycles
+Non-Flushed: count=3350069 avg=367.24 cycles stddev=541.27 cycles
+
+--- Stats after 6800000 iterations ---
+Flushed: count=3399949 avg=849.00 cycles stddev=828.43 cycles
+Non-Flushed: count=3400051 avg=367.14 cycles stddev=542.60 cycles
+
+--- Stats after 6900000 iterations ---
+Flushed: count=3449736 avg=848.53 cycles stddev=827.12 cycles
+Non-Flushed: count=3450264 avg=367.02 cycles stddev=541.37 cycles
+
+--- Stats after 7000000 iterations ---
+Flushed: count=3499825 avg=848.26 cycles stddev=827.69 cycles
+Non-Flushed: count=3500175 avg=366.92 cycles stddev=540.92 cycles
+
+--- Stats after 7100000 iterations ---
+Flushed: count=3550198 avg=847.89 cycles stddev=830.25 cycles
+Non-Flushed: count=3549802 avg=366.85 cycles stddev=542.49 cycles
+
+--- Stats after 7200000 iterations ---
+Flushed: count=3600191 avg=847.42 cycles stddev=828.94 cycles
+Non-Flushed: count=3599809 avg=366.76 cycles stddev=542.33 cycles
+
+--- Stats after 7300000 iterations ---
+Flushed: count=3650513 avg=846.92 cycles stddev=829.26 cycles
+Non-Flushed: count=3649487 avg=366.61 cycles stddev=539.23 cycles
+
+--- Stats after 7400000 iterations ---
+Flushed: count=3700494 avg=846.56 cycles stddev=828.28 cycles
+Non-Flushed: count=3699506 avg=366.52 cycles stddev=537.45 cycles
+
+--- Stats after 7500000 iterations ---
+Flushed: count=3750465 avg=846.12 cycles stddev=825.30 cycles
+Non-Flushed: count=3749535 avg=366.40 cycles stddev=535.08 cycles
+
+--- Stats after 7600000 iterations ---
+Flushed: count=3800664 avg=845.68 cycles stddev=824.27 cycles
+Non-Flushed: count=3799336 avg=366.30 cycles stddev=534.59 cycles
+
+--- Stats after 7700000 iterations ---
+Flushed: count=3850906 avg=845.34 cycles stddev=825.04 cycles
+Non-Flushed: count=3849094 avg=366.27 cycles stddev=545.12 cycles
+
+--- Stats after 7800000 iterations ---
+Flushed: count=3900854 avg=845.11 cycles stddev=822.43 cycles
+Non-Flushed: count=3899146 avg=366.20 cycles stddev=544.89 cycles
+
+--- Stats after 7900000 iterations ---
+Flushed: count=3950833 avg=844.85 cycles stddev=823.79 cycles
+Non-Flushed: count=3949167 avg=366.10 cycles stddev=542.56 cycles
+
+--- Stats after 8000000 iterations ---
+Flushed: count=4001021 avg=844.58 cycles stddev=823.19 cycles
+Non-Flushed: count=3998979 avg=365.98 cycles stddev=540.06 cycles
+
+--- Stats after 8100000 iterations ---
+Flushed: count=4050944 avg=844.40 cycles stddev=822.13 cycles
+Non-Flushed: count=4049056 avg=365.89 cycles stddev=538.48 cycles
