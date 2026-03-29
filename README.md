@@ -19,15 +19,15 @@ Open two terminals.
 
 ### Receiver:
 ```bash
-./receiver -t 600 -b 200
+./receiver -t 600 -d 200
 ```
-**-t** means threshold, **-b** means bit duration (Default:200).
+**-t** means threshold, **-d** means bit duration (Default:200).
 
 ### Sender:
 ```bash
-./sender -m "test123" -t 200
+./sender -m "test123" -d 200
 ```
-**-m** can be manually changed(Default:"HELLO WORLD/n"), default is **-t** means bit duration(Default:200).
+**-m** can be manually changed(Default:"HELLO WORLD/n"), and **-d** means bit duration(Default:200).
 
 ## Expected Output
 

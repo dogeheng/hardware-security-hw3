@@ -17,9 +17,9 @@ static inline uint64_t now_ns(void) {
 
 static void usage(const char *prog) {
     fprintf(stderr,
-        "Usage: %s [-m message] [-t bit_ms]\n"
+        "Usage: %s [-m message] [-d bit_ms]\n"
         "  -m message   Message to send (default: UHELLO\\n)\n"
-        "  -t bit_ms    Bit duration in milliseconds (default: 200)\n",
+        "  -d bit_ms    Bit duration in milliseconds (default: 200)\n",
         prog);
 }
 
@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-m") == 0 && (i + 1) < argc) {
             msg = argv[++i];
-        } else if (strcmp(argv[i], "-t") == 0 && (i + 1) < argc) {
+        } else if (strcmp(argv[i], "-d") == 0 && (i + 1) < argc) {
             bit_ms = strtoull(argv[++i], NULL, 10);
             if (bit_ms == 0) {
                 fprintf(stderr, "[Sender] bit duration must be > 0 ms\n");

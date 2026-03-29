@@ -27,9 +27,9 @@ static inline uint64_t now_ns(void) {
 
 static void usage(const char *prog) {
     fprintf(stderr,
-        "Usage: %s [-t threshold_cycles] [-b bit_ms]\n"
+        "Usage: %s [-t threshold_cycles] [-d bit_ms]\n"
         "  -t threshold_cycles   Timing threshold in cycles (default: 600)\n"
-        "  -b bit_ms             Bit duration in milliseconds (default: 200)\n",
+        "  -d bit_ms             Bit duration in milliseconds (default: 200)\n",
         prog);
 }
 
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-t") == 0 && (i + 1) < argc) {
             threshold = strtoull(argv[++i], NULL, 10);
-        } else if (strcmp(argv[i], "-b") == 0 && (i + 1) < argc) {
+        } else if (strcmp(argv[i], "-d") == 0 && (i + 1) < argc) {
             bit_ms = strtoull(argv[++i], NULL, 10);
             if (bit_ms == 0) {
                 fprintf(stderr, "[Receiver] bit duration must be > 0 ms\n");
