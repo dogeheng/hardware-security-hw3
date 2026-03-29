@@ -2,9 +2,7 @@
 
 ## Compile
 ```bash
-gcc -O2 -Wall -Wextra -o sender sender.c -ldl -lm
-gcc -O2 -Wall -Wextra -o receiver receiver.c -ldl -lm
-gcc -O2 -Wall -Wextra -o threshold threshold.c -ldl -lm
+make
 ```
 
 ## Threshold Tunning
