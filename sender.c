@@ -15,8 +15,43 @@ static inline uint64_t now_ns(void) {
     return (uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec;
 }
 
-int main(void) {
+static void usage(const char *prog) {
+    fprintf(stderr,
+        "Usage: %s [-m message] [-t bit_ms]\n"
+        "  -m message   Message to send (default: UHELLO\\n)\n"
+        "  -t bit_ms    Bit duration in milliseconds (default: 200)\n",
+        prog);
+}
+
+int main(int argc, char *argv[]) {
+    const char *msg = "HELLO WORLD\n";
+    uint64_t bit_ms = 200;
+
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-m") == 0 && (i + 1) < argc) {
+            msg = argv[++i];
+        } else if (strcmp(argv[i], "-t") == 0 && (i + 1) < argc) {
+            bit_ms = strtoull(argv[++i], NULL, 10);
+            if (bit_ms == 0) {
+                fprintf(stderr, "[Sender] bit duration must be > 0 ms\n");
+                return 1;
+            }
+        } else {
+            usage(argv[0]);
+            return 1;
+        }
+    }
+
+    size_t msg_len = strlen(msg);
+    if (msg_len > 255) {
+        fprintf(stderr, "[Sender] message too long, max 255 bytes\n");
+        return 1;
+    }
+
     printf("[Sender] Starting up...\n");
+    printf("[Sender] Message = \"%s\"\n", msg);
+    printf("[Sender] Message length = %zu bytes\n", msg_len);
+    printf("[Sender] Bit duration = %llu ms\n", (unsigned long long)bit_ms);
     fflush(stdout);
 
     // Load the real address from libc.
@@ -28,9 +63,9 @@ int main(void) {
 
     // Resolve the shared target function in libc.
     void *libc_fn = dlsym(handle, "ecvt_r");
-
     if (!libc_fn) {
         fprintf(stderr, "[Sender] dlsym failed\n");
+        dlclose(handle);
         return 1;
     }
 
@@ -42,10 +77,22 @@ int main(void) {
     int decpt = 0, sign = 0;
     char buf[64];
 
-    const unsigned char frame[] = {0xA5, 0x5A, 'U', 'H', 'E', 'L', 'L', 'O', '\n'};
-    size_t frame_len = sizeof(frame);
+    // Frame format:
+    // [0xA5][0x5A][LEN][PAYLOAD...]
+    size_t frame_len = 2 + 1 + msg_len;
+    unsigned char *frame = malloc(frame_len);
+    if (!frame) {
+        fprintf(stderr, "[Sender] malloc failed\n");
+        return 1;
+    }
+
+    frame[0] = 0xA5;
+    frame[1] = 0x5A;
+    frame[2] = (unsigned char)msg_len;
+    memcpy(frame + 3, msg, msg_len);
+
     size_t total_bits = frame_len * 8;
-    const uint64_t BIT_NS = 200000000ULL;   // 200 ms per bit
+    uint64_t BIT_NS = bit_ms * 1000000ULL;
 
     while (1) {
         uint64_t now = now_ns();
@@ -79,5 +126,6 @@ int main(void) {
         }
     }
 
+    free(frame);
     return 0;
 }

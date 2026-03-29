@@ -25,16 +25,36 @@ static inline uint64_t now_ns(void) {
     return (uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec;
 }
 
+static void usage(const char *prog) {
+    fprintf(stderr,
+        "Usage: %s [-t threshold_cycles] [-b bit_ms]\n"
+        "  -t threshold_cycles   Timing threshold in cycles (default: 600)\n"
+        "  -b bit_ms             Bit duration in milliseconds (default: 200)\n",
+        prog);
+}
+
 int main(int argc, char *argv[]) {
     uint64_t threshold = THRESHOLD_CYCLES;
+    uint64_t bit_ms = 200;
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-t") == 0 && (i + 1) < argc) {
             threshold = strtoull(argv[++i], NULL, 10);
+        } else if (strcmp(argv[i], "-b") == 0 && (i + 1) < argc) {
+            bit_ms = strtoull(argv[++i], NULL, 10);
+            if (bit_ms == 0) {
+                fprintf(stderr, "[Receiver] bit duration must be > 0 ms\n");
+                return 1;
+            }
+        } else {
+            usage(argv[0]);
+            return 1;
         }
     }
 
     printf("[Receiver] Starting up...\n");
+    printf("[Receiver] Threshold = %llu cycles\n", (unsigned long long)threshold);
+    printf("[Receiver] Bit duration = %llu ms\n", (unsigned long long)bit_ms);
     fflush(stdout);
 
     double pi = 3.141592653589793;
@@ -42,17 +62,21 @@ int main(int argc, char *argv[]) {
     char buf[64];
     uint64_t start, end;
 
-    const uint64_t BIT_NS = 200000000ULL;   // 200 ms per bit
+    uint64_t BIT_NS = bit_ms * 1000000ULL;
     uint64_t last_slot = (uint64_t)-1;
 
-    uint16_t sync_reg = 0;
     const uint16_t SYNC = 0xA55A;
+    uint16_t sync_reg = 0;
 
     int in_frame = 0;
+    int reading_length = 0;
+    int reading_payload = 0;
+
     unsigned char current_byte = 0;
     int bit_count = 0;
-    int payload_bytes = 0;
-    const int PAYLOAD_LEN = 7;   // "UHELLO\n"
+
+    unsigned char payload_len = 0;
+    unsigned int payload_bytes = 0;
 
     while (1) {
         uint64_t slot = now_ns() / BIT_NS;
@@ -79,7 +103,6 @@ int main(int argc, char *argv[]) {
         }
 
         double ratio = (total > 0) ? ((double)hits / (double)total) : 0.0;
-
         int decided_bit = -1;
 
         if (ratio > 0.6) {
@@ -91,11 +114,14 @@ int main(int argc, char *argv[]) {
         }
 
         if (decided_bit < 0) {
-            // Uncertain bit: drop current frame state and restart synchronization.
+            // Uncertain bit: reset state and restart synchronization.
             in_frame = 0;
+            reading_length = 0;
+            reading_payload = 0;
             sync_reg = 0;
             current_byte = 0;
             bit_count = 0;
+            payload_len = 0;
             payload_bytes = 0;
             putchar('?');
             fflush(stdout);
@@ -107,17 +133,43 @@ int main(int argc, char *argv[]) {
 
             if (sync_reg == SYNC) {
                 in_frame = 1;
+                reading_length = 1;
+                reading_payload = 0;
                 current_byte = 0;
                 bit_count = 0;
+                payload_len = 0;
                 payload_bytes = 0;
                 printf("\n[SYNC]\n");
                 fflush(stdout);
             }
-        } else {
-            current_byte |= (decided_bit << bit_count);
-            bit_count++;
+            continue;
+        }
 
-            if (bit_count == 8) {
+        current_byte |= (decided_bit << bit_count);
+        bit_count++;
+
+        if (bit_count == 8) {
+            if (reading_length) {
+                payload_len = current_byte;
+                printf("[LEN=%u]\n", payload_len);
+                fflush(stdout);
+
+                current_byte = 0;
+                bit_count = 0;
+                reading_length = 0;
+                reading_payload = 1;
+
+                if (payload_len == 0) {
+                    printf("[END]\n");
+                    fflush(stdout);
+                    in_frame = 0;
+                    reading_payload = 0;
+                    sync_reg = 0;
+                }
+                continue;
+            }
+
+            if (reading_payload) {
                 if (current_byte >= 32 && current_byte <= 126) {
                     putchar(current_byte);
                 } else if (current_byte == '\n') {
@@ -127,16 +179,19 @@ int main(int argc, char *argv[]) {
                 }
                 fflush(stdout);
 
+                payload_bytes++;
                 current_byte = 0;
                 bit_count = 0;
-                payload_bytes++;
 
-                if (payload_bytes == PAYLOAD_LEN) {
-                    in_frame = 0;
-                    sync_reg = 0;
-                    payload_bytes = 0;
+                if (payload_bytes == payload_len) {
                     printf("[END]\n");
                     fflush(stdout);
+
+                    in_frame = 0;
+                    reading_payload = 0;
+                    sync_reg = 0;
+                    payload_len = 0;
+                    payload_bytes = 0;
                 }
             }
         }
