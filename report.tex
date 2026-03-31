@@ -53,7 +53,9 @@ The sender then transmits the resulting byte stream one bit per time slot.
 \texttt{protocol.h} holds the shared wire-format constants, little-endian helpers, and the CRC-16 implementation. Keeping those definitions in one place made it much easier to keep sender and receiver consistent while the protocol was changing.
 
 \section{Threshold Tuning}
-On our test machine the threshold tuner consistently produced two clusters. A short calibration log is included with the submission in \texttt{report\_assets/threshold\_measurements.txt}, and the raw samples behind the paper-style distribution in Figure~\ref{fig:threshold-dist} are saved in \texttt{report\_assets/threshold\_distribution.csv}. In the later portion of the tuner log, the non-flushed average settles around \SI{360}{cycles} to \SI{370}{cycles}, while the flushed average settles around \SI{815}{cycles} to \SI{820}{cycles}. We therefore used \SI{600}{cycles} as the receiver threshold. That choice is conservative, but it sits in the gap between the two groups and worked well in our tests.
+\begin{sloppypar}
+On our test machine, the threshold tuner consistently produced two clusters. A short calibration log is included with the submission in \nolinkurl{report_assets/threshold_measurements.txt}, and the raw samples behind the paper-style distribution in Figure~\ref{fig:threshold-dist} are saved in \nolinkurl{report_assets/threshold_distribution.csv}. In the later portion of the tuner log, the non-flushed average settles around \SIrange{360}{370}{cycles}, while the flushed average settles around \SIrange{815}{820}{cycles}. We therefore used \SI{600}{cycles} as the receiver threshold. This choice is conservative, but it sits in the gap between the two groups and worked well in our tests.
+\end{sloppypar}
 
 \begin{figure}[H]
     \centering
