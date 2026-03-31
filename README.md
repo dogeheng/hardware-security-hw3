@@ -5,7 +5,7 @@
 make
 ```
 
-## Threshold Tunning
+## Threshold Tuning
 
 Run:
 ```bash
@@ -13,27 +13,52 @@ Run:
 ```
 Choose a threshold between the average flushed and non-flushed timings.
 
-## Test the Channel
+## Test the Packetized Channel
 
 Open two terminals.
 
-### Receiver:
+### Receiver
 ```bash
-./receiver -t 600 -d 200
+./receiver -t 600 -d 5
 ```
-**-t** means threshold, **-d** means bit duration (Default:200).
+`-t` is the timing threshold in cycles and `-d` is the bit duration in milliseconds.
 
-### Sender:
+### Sender: message from the command line
 ```bash
-./sender -m "test123" -d 200
+./sender -m "Packetized covert channels survive duplicates and CRC checks." -d 5 -p 16
 ```
-**-m** can be manually changed(Default:"HELLO WORLD/n"), and **-d** means bit duration(Default:200).
 
-## Expected Output
+### Sender: message from a file
+```bash
+./sender -f report_assets/test_payload.txt -d 5 -p 16
+```
+
+Sender flags:
+- `-m` sends a message from the command line.
+- `-f` reads the message from a file.
+- `-d` sets the bit duration in milliseconds.
+- `-p` sets the payload bytes per packet.
+- `-r` adds immediate packet repetition inside one transmission cycle. The default is `1` because the full packet stream is already repeated forever.
+
+## Wire Format
+
+Each packet is transmitted with this structure:
+```text
+[SYNC=0xA5 0x5A][version+flags][session_id][packet_index][packet_count][payload_len][payload][crc16]
+```
+
+The receiver validates each packet with CRC-16, stores packets by sequence number, and reassembles the full message once all packets for the current session have arrived.
+
+## Example Output
 
 The receiver should print something like:
-```bash
-[SYNC]
-[LEN=7]
-test123[END]
+```text
+[Receiver] Session 0x634c packet_count=4
+[Receiver] Packet 4/4 stored flags=0x02 len=13 progress=1/4
+[Receiver] Packet 1/4 stored flags=0x01 len=16 progress=2/4
+[Receiver] Packet 2/4 stored flags=0x00 len=16 progress=3/4
+[Receiver] Packet 3/4 stored flags=0x00 len=16 progress=4/4
+[MESSAGE COMPLETE session=0x634c packets=4 len=61]
+Packetized covert channels survive duplicates and CRC checks.
+[END MESSAGE]
 ```

@@ -1,6 +1,5 @@
-bit_ms,expected_bps,observed_bps,errors_visible
-25,28.0,23.333,no
-10,70.0,65.333,no
-5,140.0,121.333,no
-2,350.0,336.0,minor
-1,700.0,602.0,yes
+bit_ms,ideal_bps,completion_bps,note
+10,55.963,53.102,stable
+5,111.927,104.768,stable
+2,279.817,230.854,works well
+1,559.633,288.793,higher variance

@@ -23,6 +23,10 @@ TRACE_PNG = ASSET_DIR / "probe_trace.png"
 BANDWIDTH_CSV = ASSET_DIR / "bandwidth_sweep.csv"
 BANDWIDTH_PNG = ASSET_DIR / "bandwidth_sweep.png"
 
+TRACE_MESSAGE = "Packetized covert channels survive duplicates and CRC checks."
+TRACE_PACKET_BYTES = 16
+TRACE_REPETITIONS = 1
+
 
 def run(cmd: list[str], cwd: Path | None = None) -> None:
     subprocess.run(cmd, cwd=cwd, check=True)
@@ -44,9 +48,19 @@ def build_trace_binary() -> None:
     )
 
 
-def generate_probe_trace(bit_ms: int = 5, threshold: int = 600, slots: int = 120, message: str = "test123") -> None:
+def generate_probe_trace(bit_ms: int = 5, threshold: int = 600, slots: int = 120) -> None:
     sender = subprocess.Popen(
-        [str(CODE_DIR / "sender"), "-m", message, "-d", str(bit_ms)],
+        [
+            str(CODE_DIR / "sender"),
+            "-m",
+            TRACE_MESSAGE,
+            "-d",
+            str(bit_ms),
+            "-p",
+            str(TRACE_PACKET_BYTES),
+            "-r",
+            str(TRACE_REPETITIONS),
+        ],
         cwd=CODE_DIR,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -63,7 +77,11 @@ def generate_probe_trace(bit_ms: int = 5, threshold: int = 600, slots: int = 120
                 "-n",
                 str(slots),
                 "-m",
-                message,
+                TRACE_MESSAGE,
+                "-p",
+                str(TRACE_PACKET_BYTES),
+                "-r",
+                str(TRACE_REPETITIONS),
                 "-o",
                 str(TRACE_CSV),
             ]
@@ -122,11 +140,10 @@ def plot_probe_trace() -> None:
 
 def write_bandwidth_csv() -> None:
     rows = [
-        {"bit_ms": 25, "expected_bps": 28.0, "observed_bps": 23.333, "errors_visible": "no"},
-        {"bit_ms": 10, "expected_bps": 70.0, "observed_bps": 65.333, "errors_visible": "no"},
-        {"bit_ms": 5, "expected_bps": 140.0, "observed_bps": 121.333, "errors_visible": "no"},
-        {"bit_ms": 2, "expected_bps": 350.0, "observed_bps": 336.0, "errors_visible": "minor"},
-        {"bit_ms": 1, "expected_bps": 700.0, "observed_bps": 602.0, "errors_visible": "yes"},
+        {"bit_ms": 10, "ideal_bps": 55.963, "completion_bps": 53.102, "note": "stable"},
+        {"bit_ms": 5, "ideal_bps": 111.927, "completion_bps": 104.768, "note": "stable"},
+        {"bit_ms": 2, "ideal_bps": 279.817, "completion_bps": 230.854, "note": "works well"},
+        {"bit_ms": 1, "ideal_bps": 559.633, "completion_bps": 288.793, "note": "higher variance"},
     ]
     with BANDWIDTH_CSV.open("w", newline="") as fp:
         writer = csv.DictWriter(fp, fieldnames=list(rows[0].keys()))
@@ -138,21 +155,20 @@ def plot_bandwidth() -> None:
     df = pd.read_csv(BANDWIDTH_CSV)
 
     plt.figure(figsize=(7.2, 4.4))
-    plt.plot(df["bit_ms"], df["expected_bps"], marker="o", color="#444444", label="Expected payload goodput")
-    plt.plot(df["bit_ms"], df["observed_bps"], marker="o", color="#d62728", label="Observed exact-payload goodput")
+    plt.plot(df["bit_ms"], df["ideal_bps"], marker="o", color="#444444", label="Ideal cycle-limited goodput")
+    plt.plot(df["bit_ms"], df["completion_bps"], marker="o", color="#d62728", label="Observed completion rate")
     for _, row in df.iterrows():
-        if row["errors_visible"] != "no":
-            plt.annotate(
-                row["errors_visible"],
-                (row["bit_ms"], row["observed_bps"]),
-                xytext=(6, 8),
-                textcoords="offset points",
-                fontsize=9,
-                color="#444444",
-            )
+        plt.annotate(
+            row["note"],
+            (row["bit_ms"], row["completion_bps"]),
+            xytext=(6, 8),
+            textcoords="offset points",
+            fontsize=9,
+            color="#444444",
+        )
     plt.gca().invert_xaxis()
     plt.xlabel("Bit Duration (ms)")
-    plt.ylabel("Payload Goodput (bps)")
+    plt.ylabel("Payload Rate (bps)")
     plt.grid(True, axis="y", linestyle=":", linewidth=0.7, color="0.8")
     plt.legend(frameon=False, loc="upper left")
     plt.tight_layout()

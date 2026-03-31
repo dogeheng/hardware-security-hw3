@@ -9,59 +9,73 @@
 \usepackage{siunitx}
 
 \title{COMS E6424 Hardware Security\\Homework 3 Reflection Report}
-\author{Hardware Security HW3 Team}
+\author{Peiheng Li(pl2978)~~~~~Peng Chen(pc3193)\\Wenxuan Xu(wx2341)~~~~~Xiangyu Liao(xl3581)~~~~~Yinfeng Chai(yc4669)}
 \date{\today}
 
 \begin{document}
 \maketitle
 
 \section{Overview}
-This homework asked us to build a covert channel between two user processes running on the same VM without using an overt communication path. Our final implementation is a Flush+Reload channel built around the shared \texttt{libc} symbol \texttt{ecvt\_r}. The sender keeps that function hot in the instruction cache when it wants to transmit a \texttt{1}, and it repeatedly flushes the relevant cache lines when it wants to transmit a \texttt{0}. The receiver probes the same function, measures the access time with \texttt{RDTSCP}, and decides which bit was present in the current slot.
+This homework asked us to build a covert channel between two user processes running on the same VM without using an overt communication path. Our implementation still uses the same physical idea as before: a Flush+Reload channel built around the shared \texttt{libc} symbol \texttt{ecvt\_r}. A cache-hot slot carries a \texttt{1}. A flushed slot carries a \texttt{0}. The receiver probes the same function, times it with \texttt{RDTSCP}, and converts the resulting timing pattern into bits.
 
-The appendix provided a useful starting point for the basic attack primitive, but that alone was not enough for a reliable communication channel. Most of the work went into making the signal usable under realistic noise. In the final version, we added fixed-duration time slots, a short frame format with a synchronization word and a payload length, and a receiver-side decision rule based on the aggregate behavior of many probes inside each slot.
+The main change in the final version is above the physical layer. Instead of repeating one ad hoc frame forever, we now send a packet stream. A long message is split into fixed-size payload chunks, each chunk is wrapped in a small header, and the receiver reassembles the original text from validated packets. In practice, this changed the system from ``a covert channel that can print one short string'' into ``a covert channel that can transport a longer text as a sequence of datagrams.'' That was the real goal.
 
 \section{Techniques We Tried and Why}
-The first version was essentially the appendix receiver: time a single call to \texttt{ecvt\_r}, compare it against a threshold, and print \texttt{0} or \texttt{1}. That confirmed the microarchitectural effect was real, but the output was not useful as a communication channel. A raw bit stream is hard to align. It is even harder to decode when the sender and receiver start at different times.
+Our starting point was the appendix code. It was useful for verifying the basic microarchitectural effect, but it was not a complete transport mechanism. The earliest version simply measured one call to \texttt{ecvt\_r}, compared the timing against a threshold, and emitted raw bits. That was enough to show that the cache state was observable. It was not enough to move a message in a controlled way.
 
-We then moved to the current design. Both processes divide time into slots using \texttt{CLOCK\_MONOTONIC}. Once they share the same bit duration, they also share the same slot boundaries, so no explicit handshake is needed. The sender computes the transmitted bit as \texttt{slot \% total\_bits}, while the receiver samples throughout that same slot and bases its decision on the overall hit ratio. This was a much better fit for a noisy VM than relying on a single timing measurement per bit.
+The first improvement was slotting. Both processes divide time into fixed windows using \texttt{CLOCK\_MONOTONIC}. Once the bit duration is known on both sides, they implicitly agree on bit boundaries. The sender uses the current slot number to decide which bit to place on the channel, and the receiver spends the whole slot probing and deciding whether the slot looked mostly hot or mostly cold. This was much more stable than treating each bit as a single timing sample.
 
-Framing was the second key improvement. Each transmission begins with \texttt{0xA5 0x5A}, followed by a one-byte payload length and then the message itself. The receiver keeps a 16-bit shift register and searches for \texttt{0xA55A}. Once the sync word appears, the next eight bits are interpreted as the length byte, and the following bits are decoded as payload. This made the receiver far less sensitive to startup offset and temporary loss of alignment.
+The second improvement was framing, and later packetization. The intermediate version added a sync word and a payload length, which already made the channel easier to align. The current version goes one step further and uses a small one-way packet protocol. Each packet carries a version-and-flags byte, a session identifier, a packet index, the total packet count, a payload length, the payload itself, and a CRC-16. The sender repeats the packet train indefinitely, so the receiver can start in the middle of a transmission and still collect missing packets over later cycles. Since the receiver cannot acknowledge anything, this kind of one-way redundancy is much more useful than a stop-and-wait design.
 
-We also considered adding explicit error-correcting codes. We did not implement them in the final version because the simpler design was already adequate at the bit durations we were using. Instead, the receiver treats an ambiguous slot as a local failure, discards the partial frame, and waits for the next synchronization pattern. This reduces the chance that one uncertain decision corrupts the rest of the message.
+We also tested immediate packet duplication inside the same transmission cycle. The idea was straightforward: if one copy is damaged, the second may survive. In four quick \SI{1}{ms} trials with a 61-byte message, however, both \texttt{-r 1} and \texttt{-r 2} completed 4/4 times on our machine, while the average completion time increased from about \SI{1.02}{s} to \SI{1.30}{s} with \texttt{-r 2}. Because the full packet train is already retransmitted forever, we kept \texttt{-r} as an option for noisier setups but set the default to \texttt{1}.
 
 \section{Implementation Summary}
-The submission contains three C programs.
+The submission now consists of three C programs and one shared header.
 
-\texttt{threshold.c} is the calibration tool. It repeatedly times \texttt{ecvt\_r} in two conditions: after flushing the relevant cache lines, and without flushing them. The purpose is to estimate a threshold that separates the two timing clusters on the machine currently being tested.
+\texttt{threshold.c} is still the calibration tool. It measures \texttt{ecvt\_r} after flushed and non-flushed conditions and reports the timing statistics needed to choose a threshold.
 
-\texttt{sender.c} resolves \texttt{ecvt\_r} with \texttt{dlopen}/\texttt{dlsym}, builds a frame, and then transmits one bit per time slot. For a \texttt{1}, it repeatedly calls \texttt{ecvt\_r} until the slot ends. For a \texttt{0}, it repeatedly flushes the same code region.
+\texttt{sender.c} now packetizes the input message. By default it uses 16 payload bytes per packet. It supports both \texttt{-m} for a command-line string and \texttt{-f} for reading a longer text from a file. Each packet is serialized as
+\[
+  [\texttt{A5 5A}][\texttt{version+flags}][\texttt{session\_id}][\texttt{packet\_index}][\texttt{packet\_count}][\texttt{payload\_len}][\texttt{payload}][\texttt{crc16}].
+\]
+\[
+\begin{array}{l|c|c|c|c|c|c|c}
+\textbf{Field} & \texttt{SYNC} & \texttt{V{+}FLG} & \texttt{SESSION} & \texttt{PACKET\_IDX} & \texttt{PACKET\_CNT} & \texttt{PL\_LEN} & \texttt{PAYLOAD} \;|\; \texttt{CRC16} \\
+\hline
+\textbf{Length} & 2\text{ B} & 1\text{ B} & 2\text{ B} & 2\text{ B} & 2\text{ B} & 1\text{ B} & 0\text{--}64\text{ B} \;|\; 2\text{ B}
+\end{array}
+\]
 
-\texttt{receiver.c} probes \texttt{ecvt\_r} for the duration of a slot, counts how many probes fall below the configured threshold, and turns the resulting hit ratio into a bit decision. It then looks for the sync word, reads the length byte, and prints the recovered payload.
+The sender then transmits the resulting byte stream one bit per time slot.
+
+\texttt{receiver.c} probes the channel one slot at a time, searches for the sync word, parses packets, checks the CRC, stores valid packets by sequence number, and prints the reconstructed message once all packets for the current session have been received. Importantly, an ambiguous bit no longer destroys the whole reassembly state. It only causes the receiver to drop the current partial packet and look for the next sync word.
+
+\texttt{protocol.h} holds the shared wire-format constants, little-endian helpers, and the CRC-16 implementation. Keeping those definitions in one place made it much easier to keep sender and receiver consistent while the protocol was changing.
 
 \section{Threshold Tuning}
-On our test machine the threshold tuner consistently produced two clusters. A short calibration log is included with the submission in \texttt{report\_assets/threshold\_measurements.txt}. In the later portion of that log, the non-flushed average settles near \SI{366}{cycles} and the flushed average near \SI{844}{cycles}. We therefore used \SI{600}{cycles} as the receiver threshold. The choice is deliberately conservative. It sits far enough from both means that the receiver can tolerate noise while still separating hits from misses.
+On our test machine the threshold tuner consistently produced two clusters. A short calibration log is included with the submission in \texttt{report\_assets/threshold\_measurements.txt}. In the later portion of that log, the non-flushed average settles near \SI{366}{cycles} and the flushed average near \SI{844}{cycles}. We therefore used \SI{600}{cycles} as the receiver threshold. That choice is conservative, but it is comfortably between the two calibration clusters and worked well in our tests.
 
-The threshold is machine-dependent, which is why we left it configurable at runtime. The protocol itself does not rely on a specific cycle count. What matters is that the chosen value separates the two timing distributions reasonably well on the machine being tested.
+The threshold is still machine-dependent. Nothing in the higher-level packet protocol relies on \SI{600}{cycles} specifically; only the physical-layer classifier does. On another VM, the correct threshold may move, but the packet format and reassembly logic can remain unchanged.
 
-These calibration numbers should not be read as identical to the values in Figure~\ref{fig:probe-trace}. The threshold tuner measures a single timed call after a local flush or non-flush decision. The plot, in contrast, shows slot-level average probe times while a separate sender process is actively transmitting. During a \texttt{0} slot, the sender repeatedly flushes the target throughout the entire slot, so the observed average probe time is much higher, around \SI{1.8e3}{cycles} on our machine.
+These calibration numbers are not supposed to match the plot in Figure~\ref{fig:probe-trace}. The tuner measures isolated single-call timings. The plot shows slot-level average probe times while the packetized sender is actively running. During a \texttt{0} bit, the sender keeps flushing the target throughout the slot, so the observed average becomes much larger than the single-flush calibration number.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.92\linewidth]{report_assets/probe_trace.png}
-    \caption{Probe-time measurements for \texttt{ecvt\_r} over 120 consecutive time slots while the sender transmits the frame for \texttt{test123} at \SI{5}{ms} per bit. The figure is inspired by the probe-time plot in the original Flush+Reload paper, but it is generated from our own implementation and our own measurements. Low points correspond to cache-hot slots, while high points correspond to slots in which the sender continuously flushes the target during transmission of a \texttt{0}.}
+    \caption{Probe-time measurements for \texttt{ecvt\_r} over 120 consecutive time slots while the sender transmits a 61-byte packetized message at \SI{5}{ms} per bit. The figure follows the style of the probe-time plot in the original Flush+Reload paper, but it is generated from our own implementation and our own measurements. On this run the hot cluster stays near \SI{365}{cycles}, while the flushed cluster rises to roughly \SI{2.2e3}{cycles}.}
     \label{fig:probe-trace}
 \end{figure}
 
-Figure~\ref{fig:probe-trace} shows the behavior we relied on during decoding. The timing noise is visible, which is expected in a virtualized environment, but the two groups are still clearly separated. That separation is what makes the channel practical.
+Figure~\ref{fig:probe-trace} shows why the channel works. Even on a virtualized machine, the two groups are still clearly separated. The packet protocol only helps if the physical bit classifier is clean enough to supply useful bits in the first place.
 
 \section{Expected Bandwidth Versus Measured Bandwidth}
-For a payload of length \(L\) bytes, the frame contains \(L + 3\) bytes because we add two sync bytes and one length byte. The expected payload goodput is therefore
+For the packetized measurements below, we used the message \texttt{Packetized covert channels survive duplicates and CRC checks.}, which is 61 bytes long. With a 16-byte payload size, that message becomes four packets. One full transmission cycle contains 109 bytes on the wire, or 872 transmitted bits. Since the message itself carries 488 payload bits, the ideal cycle-limited payload goodput is
 \[
-R_{\text{payload}} = \frac{8L}{8(L+3)d} = \frac{L}{(L+3)d},
+R_{\text{ideal}} = \frac{488}{872d},
 \]
-where \(d\) is the bit duration in seconds. For the test string \texttt{test123}, \(L = 7\), so the payload fraction of each frame is \(7/10\).
+where \(d\) is the bit duration in seconds.
 
-We measured the channel with the current code by running the sender and receiver concurrently and counting how many exact \texttt{test123[END]} decodes appeared during a 12-second observation window. Table~\ref{tab:bandwidth} summarizes the results.
+To measure the updated protocol, we started the receiver, launched the sender, and timed how long it took until the first fully reassembled message appeared. Table~\ref{tab:bandwidth} reports both the ideal cycle-limited goodput and the observed completion rate, where the completion rate is just payload bits divided by the measured completion time.
 
 \begin{table}[H]
     \centering
@@ -71,54 +85,54 @@ We measured the channel with the current code by running the sender and receiver
     \resizebox{\linewidth}{!}{%
     \begin{tabular}{@{}rrrrl@{}}
         \toprule
-        Bit dur. (ms) & Expected goodput (bps) & Observed goodput (bps) & Exact frames in 12 s & Notes \\
+        Bit dur. (ms) & Ideal goodput (bps) & Completion time (s) & Completion rate (bps) & Notes \\
         \midrule
-        25 & 28.0 & 23.3 & 5 & Stable \\
-        10 & 70.0 & 65.3 & 14 & Stable \\
-        5  & 140.0 & 121.3 & 26 & Stable; comfortable operating point \\
-        2  & 350.0 & 336.0 & 72 & One uncertain slot in 12 s \\
-        1  & 700.0 & 602.0 & 129 & Visible decoding errors begin \\
+        10 & 56.0 & 9.19 & 53.1 & Stable \\
+        5  & 111.9 & 4.66 & 104.8 & Stable \\
+        2  & 279.8 & 2.11 & 230.9 & Works well \\
+        1  & 559.6 & 1.69 & 288.8 & Higher variance \\
         \bottomrule
     \end{tabular}%
     }
-    \caption{Measured payload goodput for the current implementation using the message \texttt{test123}. The observed rate counts only exact payload recoveries.}
+    \caption{Measured behavior of the packetized protocol for a 61-byte message split into four packets with 16 payload bytes each. The completion rate is based on time to first fully reassembled message.}
     \label{tab:bandwidth}
 \end{table}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.82\linewidth]{report_assets/bandwidth_sweep.png}
-    \caption{Expected payload goodput versus observed exact-payload goodput. The channel scales well as the bit duration decreases, but at \SI{1}{ms} the receiver starts to show visible corruption.}
+    \caption{Ideal cycle-limited payload goodput versus observed completion rate for the packetized protocol. The two curves remain close at \SI{10}{ms} and \SI{5}{ms}. At \SI{2}{ms} and especially \SI{1}{ms}, the message still arrives, but the receiver spends more time waiting for the missing packets that complete the set.}
     \label{fig:bandwidth}
 \end{figure}
 
-The trend is consistent with what we expected. Shorter slots increase the raw capacity almost linearly, but they also reduce the timing margin available to the receiver. Up to about \SI{5}{ms}, the current implementation remains stable on our machine. At \SI{2}{ms}, it still works well, although the receiver has less margin against noise. At \SI{1}{ms}, many frames are still decoded correctly, but visible corruption begins to appear. For that reason, \SI{5}{ms} is the operating point we would recommend, while \SI{2}{ms} is a more aggressive setting that still performs reasonably well on this VM.
+The behavior is different from the earlier single-frame version, and that is expected. Once the message is packetized, the receiver no longer needs one perfectly decoded frame. It only needs one valid copy of each packet. This improves robustness, especially when the receiver starts in the middle of a transmission. At the same time, there is more protocol overhead: headers, CRC, and packet boundaries all cost bits. That is the tradeoff.
 
-Latency also improved substantially. With the older \SI{200}{ms} setting from the README, one complete \texttt{test123} frame took about \SI{20.1}{s} to appear in our first-message test. At \SI{10}{ms}, the same message was recovered in under one second. The protocol stayed the same; the main difference was that the channel had enough signal quality to support much shorter slots.
+On our machine, \SI{5}{ms} is a comfortable setting. It delivered the full 61-byte message in about \SI{4.66}{s}, which corresponds to roughly \SI{105}{bps} of useful payload. \SI{2}{ms} still worked well and brought the completion time down to about \SI{2.11}{s}. At \SI{1}{ms}, the protocol still completed in our tests, but the timing was clearly less stable. This is exactly the kind of behavior the packet design was meant to improve: instead of failing catastrophically, the receiver can wait for whichever packet did not arrive cleanly on the first pass.
+
+We also tested the file-input path with an 84-byte text file stored as \texttt{report\_assets/test\_payload.txt}. At \SI{2}{ms}, the receiver reconstructed the full six-packet message and printed the original text correctly. That test was important because a packet protocol is much more useful when it can accept a longer input than what is practical to type directly on the command line.
 
 \section{Hardware and Reproducibility}
-Our measurements were taken on a Linux guest running under WSL2 on an AMD Ryzen 9 9950X3D system. The guest reports 32 logical CPUs, \texttt{clflush}, and \texttt{rdtscp} support. The environment matters. This is still a VM, so there is scheduler noise and hypervisor interference, but the shared-library code pages are available to both processes, which is exactly what Flush+Reload needs.
+Our measurements were taken on a Linux guest running under WSL2 on an AMD Ryzen 9 9950X3D system. The guest reports 32 logical CPUs, \texttt{clflush}, and \texttt{rdtscp} support. The environment still matters. This is a VM, so there is scheduler noise and hypervisor interference, but the shared-library code pages are available to both processes, which is exactly what Flush+Reload needs.
 
-To reproduce the basic experiment:
+To reproduce the current packetized experiment:
 
 \begin{enumerate}
     \item Compile with \texttt{make}.
     \item Run \texttt{./threshold} and choose a threshold between the flushed and non-flushed timing clusters. On our machine, \SI{600}{cycles} worked well.
     \item Start the receiver, for example \texttt{./receiver -t 600 -d 5}.
-    \item Start the sender in another terminal, for example \texttt{./sender -m "test123" -d 5}.
+    \item Start the sender, for example \texttt{./sender -m "Packetized covert channels survive duplicates and CRC checks." -d 5 -p 16}.
+    \item For longer text, use \texttt{-f} instead of \texttt{-m}. For noisier settings, \texttt{-r 2} remains available as an optional redundancy knob.
 \end{enumerate}
 
-The code is intentionally parameterized. If the same threshold does not work on another machine, the correct fix is to retune the threshold, not to change the protocol.
-
 \section{Reflection}
-The main lesson from this homework is that detecting a cache effect is only the first step. Turning that effect into a communication channel is a separate problem. A design that looks fine when inspected one probe at a time can still fail as soon as timing drift, startup misalignment, or scheduler noise enters the picture.
+The most useful lesson from this homework was that the microarchitectural channel itself is only part of the system. A good transport layer matters just as much. Without it, the receiver sees a stream of timings and hopes they line up. With it, the receiver has structure: packet boundaries, packet numbers, a way to reject corruption, and a clear rule for when the message is complete.
 
-The final design is still relatively simple, but each part serves a clear purpose. Time slots reduce drift. The sync word establishes frame boundaries. The length byte tells the receiver when the payload is complete. Majority voting inside a slot makes the bit decision less sensitive to outliers, and the reset-on-uncertainty rule limits error propagation. None of these mechanisms is complicated on its own, but together they make the difference between a timing demo and a usable covert channel.
+That changed the failure mode in a good way. The older design could lose the message if one portion of the frame went bad. The packetized design is more forgiving. If one packet is damaged, the receiver drops that packet, keeps the valid ones it already has, and waits for the missing piece to reappear in a later cycle. That is a much more realistic behavior for a one-way channel.
 
-If we had more time, the next step would be to add lightweight forward-error correction or at least a checksum over the payload. That would be most useful near \SI{1}{ms}, where the channel becomes faster but also less clean. Another reasonable extension would be CPU pinning, which could reduce scheduler interference and make the shorter bit durations more stable.
+If we had more time, the next step would probably be a stronger forward-error-correcting code inside each packet, or a checksum over the whole reassembled message in addition to the per-packet CRC. We would also look at CPU pinning and perhaps a smaller probe window jitter margin on quieter machines. The current protocol is already much more useful than the original frame-only design, but it still leaves room for tuning.
 
 \section{Conclusion}
-We implemented a working Flush+Reload covert channel that transmits framed messages between two local processes through shared instruction-cache state. The core microarchitectural primitive came from the assignment appendix, but the reliable channel behavior came from protocol work layered on top of it. On our test platform, the implementation is comfortable at \SI{5}{ms} per bit and remains mostly usable down to \SI{2}{ms}. Below that point the bandwidth keeps increasing, but the error rate starts to become visible.
+We implemented a working packetized covert channel on top of the Flush+Reload physical layer. The sender now breaks long text into numbered packets, the receiver validates those packets with CRC-16, stores them by sequence number, and reconstructs the original message once all packets have arrived. On our test platform, this design carried multi-packet messages reliably at \SI{5}{ms} and remained usable down to \SI{1}{ms}, with the expected increase in timing variance at the fastest setting.
 
 \begin{thebibliography}{9}
 \bibitem{yarom2014}
