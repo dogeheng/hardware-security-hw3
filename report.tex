@@ -53,16 +53,23 @@ The sender then transmits the resulting byte stream one bit per time slot.
 \texttt{protocol.h} holds the shared wire-format constants, little-endian helpers, and the CRC-16 implementation. Keeping those definitions in one place made it much easier to keep sender and receiver consistent while the protocol was changing.
 
 \section{Threshold Tuning}
-On our test machine the threshold tuner consistently produced two clusters. A short calibration log is included with the submission in \texttt{report\_assets/threshold\_measurements.txt}. In the later portion of that log, the non-flushed average settles near \SI{366}{cycles} and the flushed average near \SI{844}{cycles}. We therefore used \SI{600}{cycles} as the receiver threshold. That choice is conservative, but it is comfortably between the two calibration clusters and worked well in our tests.
+On our test machine the threshold tuner consistently produced two clusters. A short calibration log is included with the submission in \texttt{report\_assets/threshold\_measurements.txt}, and the raw samples behind the paper-style distribution in Figure~\ref{fig:threshold-dist} are saved in \texttt{report\_assets/threshold\_distribution.csv}. In the later portion of the tuner log, the non-flushed average settles around \SI{360}{cycles} to \SI{370}{cycles}, while the flushed average settles around \SI{815}{cycles} to \SI{820}{cycles}. We therefore used \SI{600}{cycles} as the receiver threshold. That choice is conservative, but it sits in the gap between the two groups and worked well in our tests.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.94\linewidth]{report_assets/threshold_distribution.png}
+    \caption{Distribution of isolated \texttt{ecvt\_r} probe times collected with the same flush/non-flush experiment as \texttt{threshold.c}. The plot is intentionally styled after the load-time distribution figure in the original Flush+Reload paper, but it is generated from our own measurements. We collected 5000 flushed samples and 5000 non-flushed samples. The non-flushed accesses cluster near \SI{350}{cycles}, while the flushed accesses peak near \SI{730}{cycles} and show a longer tail.}
+    \label{fig:threshold-dist}
+\end{figure}
 
 The threshold is still machine-dependent. Nothing in the higher-level packet protocol relies on \SI{600}{cycles} specifically; only the physical-layer classifier does. On another VM, the correct threshold may move, but the packet format and reassembly logic can remain unchanged.
 
-These calibration numbers are not supposed to match the plot in Figure~\ref{fig:probe-trace}. The tuner measures isolated single-call timings. The plot shows slot-level average probe times while the packetized sender is actively running. During a \texttt{0} bit, the sender keeps flushing the target throughout the slot, so the observed average becomes much larger than the single-flush calibration number.
+These calibration numbers are not supposed to match the plot in Figure~\ref{fig:probe-trace}. Figure~\ref{fig:threshold-dist} shows isolated single-call timings. Figure~\ref{fig:probe-trace} shows slot-level average probe times while the packetized sender is actively running. During a \texttt{0} bit, the sender keeps flushing the target throughout the slot, so the observed average becomes much larger than the single-flush calibration number.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.92\linewidth]{report_assets/probe_trace.png}
-    \caption{Probe-time measurements for \texttt{ecvt\_r} over 120 consecutive time slots while the sender transmits a 61-byte packetized message at \SI{5}{ms} per bit. The figure follows the style of the probe-time plot in the original Flush+Reload paper, but it is generated from our own implementation and our own measurements. On this run the hot cluster stays near \SI{365}{cycles}, while the flushed cluster rises to roughly \SI{2.2e3}{cycles}.}
+    \caption{Probe-time measurements for \texttt{ecvt\_r} over 120 consecutive time slots while the sender transmits a 61-byte packetized message at \SI{5}{ms} per bit. The figure follows the style of the probe-time plot in the original Flush+Reload paper, but it is generated from our own implementation and our own measurements. On this run the hot cluster stays near \SI{375}{cycles}, while the flushed cluster rises to roughly \SI{1.8e3}{cycles}.}
     \label{fig:probe-trace}
 \end{figure}
 

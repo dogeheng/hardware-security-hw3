@@ -11,11 +11,16 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 import pandas as pd
 
 
 ASSET_DIR = Path(__file__).resolve().parent
 CODE_DIR = ASSET_DIR.parent
+THRESHOLD_SRC = ASSET_DIR / "threshold_distribution.c"
+THRESHOLD_BIN = ASSET_DIR / "threshold_distribution"
+THRESHOLD_CSV = ASSET_DIR / "threshold_distribution.csv"
+THRESHOLD_PNG = ASSET_DIR / "threshold_distribution.png"
 TRACE_SRC = ASSET_DIR / "probe_trace.c"
 TRACE_BIN = ASSET_DIR / "probe_trace"
 TRACE_CSV = ASSET_DIR / "probe_trace.csv"
@@ -32,7 +37,22 @@ def run(cmd: list[str], cwd: Path | None = None) -> None:
     subprocess.run(cmd, cwd=cwd, check=True)
 
 
-def build_trace_binary() -> None:
+def build_support_binaries() -> None:
+    run(["make", "-C", str(CODE_DIR), "sender"])
+    run(
+        [
+            "gcc",
+            "-O2",
+            "-Wall",
+            "-Wextra",
+            "-march=native",
+            "-o",
+            str(THRESHOLD_BIN),
+            str(THRESHOLD_SRC),
+            "-lm",
+            "-ldl",
+        ]
+    )
     run(
         [
             "gcc",
@@ -46,6 +66,63 @@ def build_trace_binary() -> None:
             "-lm",
         ]
     )
+
+
+def generate_threshold_distribution(samples_per_class: int = 5000) -> None:
+    run(
+        [
+            str(THRESHOLD_BIN),
+            "-n",
+            str(samples_per_class),
+            "-o",
+            str(THRESHOLD_CSV),
+        ]
+    )
+
+
+def plot_threshold_distribution() -> None:
+    df = pd.read_csv(THRESHOLD_CSV)
+    flushed = df.loc[df["mode"] == "flushed", "cycles"]
+    nonflushed = df.loc[df["mode"] == "nonflushed", "cycles"]
+
+    upper = int(df["cycles"].quantile(0.995))
+    upper = max(upper, 1200)
+    upper = min(upper, int(df["cycles"].max()))
+    bin_width = 4 if upper <= 1600 else 8
+    bins = list(range(0, upper + bin_width, bin_width))
+    if bins[-1] < upper:
+        bins.append(upper)
+
+    plt.figure(figsize=(9.1, 4.6))
+    counts_flushed, _, _ = plt.hist(
+        flushed,
+        bins=bins,
+        weights=[100.0 / len(flushed)] * len(flushed),
+        histtype="step",
+        linewidth=2.1,
+        color="#1f4ed8",
+        label="From Memory (flushed)",
+    )
+    counts_nonflushed, _, _ = plt.hist(
+        nonflushed,
+        bins=bins,
+        weights=[100.0 / len(nonflushed)] * len(nonflushed),
+        histtype="step",
+        linewidth=2.1,
+        color="#21d621",
+        label="From Cache (non-flushed)",
+    )
+
+    ymax = max(counts_flushed.max() if len(counts_flushed) else 0, counts_nonflushed.max() if len(counts_nonflushed) else 0)
+    plt.xlabel("Probe Time (cycles)")
+    plt.ylabel("Samples (%)")
+    plt.xlim(0, upper)
+    plt.ylim(0, ymax * 1.08 if ymax > 0 else 100)
+    plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(xmax=100, decimals=0))
+    plt.legend(frameon=False, loc="upper right")
+    plt.tight_layout()
+    plt.savefig(THRESHOLD_PNG, dpi=220)
+    plt.close()
 
 
 def generate_probe_trace(bit_ms: int = 5, threshold: int = 600, slots: int = 120) -> None:
@@ -178,7 +255,9 @@ def plot_bandwidth() -> None:
 
 def main() -> None:
     ASSET_DIR.mkdir(parents=True, exist_ok=True)
-    build_trace_binary()
+    build_support_binaries()
+    generate_threshold_distribution()
+    plot_threshold_distribution()
     generate_probe_trace()
     plot_probe_trace()
     write_bandwidth_csv()
