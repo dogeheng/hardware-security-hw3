@@ -1,5 +1,5 @@
 bit_ms,ideal_bps,completion_bps,note
-10,55.963,53.102,stable
-5,111.927,104.768,stable
-2,279.817,230.854,works well
-1,559.633,288.793,higher variance
+10,58.095,53.102,stable
+5,116.190,104.768,stable
+2,290.476,230.854,works well
+1,580.952,288.793,higher variance
