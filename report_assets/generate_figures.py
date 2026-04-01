@@ -217,10 +217,10 @@ def plot_probe_trace() -> None:
 
 def write_bandwidth_csv() -> None:
     rows = [
-        {"bit_ms": 10, "ideal_bps": 58.095, "completion_bps": 63.216, "note": "stable"},
-        {"bit_ms": 5, "ideal_bps": 116.190, "completion_bps": 124.668, "note": "stable"},
-        {"bit_ms": 2, "ideal_bps": 290.476, "completion_bps": 275.333, "note": "works well"},
-        {"bit_ms": 1, "ideal_bps": 580.952, "completion_bps": 343.759, "note": "higher variance"},
+        {"bit_ms": 10, "ideal_bps": 58.095, "completion_bps": 53.102, "note": "stable"},
+        {"bit_ms": 5, "ideal_bps": 116.190, "completion_bps": 104.768, "note": "stable"},
+        {"bit_ms": 2, "ideal_bps": 290.476, "completion_bps": 230.854, "note": "works well"},
+        {"bit_ms": 1, "ideal_bps": 580.952, "completion_bps": 288.793, "note": "higher variance"},
     ]
     with BANDWIDTH_CSV.open("w", newline="") as fp:
         writer = csv.DictWriter(fp, fieldnames=list(rows[0].keys()))
