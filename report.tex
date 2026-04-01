@@ -25,7 +25,7 @@ Our starting point was the appendix code. It was useful for verifying the basic 
 
 The first improvement was slotting. Both processes divide time into fixed windows using \texttt{CLOCK\_MONOTONIC}. Once the bit duration is known on both sides, they implicitly agree on bit boundaries. The sender uses the current slot number to decide which bit to place on the channel, and the receiver spends the whole slot probing and deciding whether the slot looked mostly hot or mostly cold. This was much more stable than treating each bit as a single timing sample.
 
-The second improvement was framing, and later packetization. The intermediate version added a sync word and a payload length, which already made the channel easier to align. The current version goes one step further and uses a small one-way packet protocol. Each packet carries a session identifier, a packet index, the total packet count, a payload length, the payload itself, and a CRC-16. The sender repeats the packet train indefinitely, so the receiver can start in the middle of a transmission and still collect missing packets over later cycles. Since the receiver cannot acknowledge anything, this kind of one-way redundancy is much more useful than a stop-and-wait design.
+The second improvement was framing, and later packetization. We added a sync word and a payload length, which already made the channel easier to align.  Besides, we used a small one-way packet protocol. Each packet carries a session identifier, a packet index, the total packet count, a payload length, the payload itself, and a CRC-16. The sender repeats the packet train indefinitely, so the receiver can start in the middle of a transmission and still collect missing packets over later cycles. Since the receiver cannot acknowledge anything, this kind of one-way redundancy is much more useful than a stop-and-wait design.
 
 We also tested immediate packet duplication inside the same transmission cycle. The idea was straightforward: if one copy is damaged, the second may survive. In four quick \SI{1}{ms} trials with a 61-byte message, however, both \texttt{-r 1} and \texttt{-r 2} completed 4/4 times on our machine, while the average completion time increased from about \SI{1.02}{s} to \SI{1.30}{s} with \texttt{-r 2}. Because the full packet train is already retransmitted forever, we kept \texttt{-r} as an option for noisier setups but set the default to \texttt{1}.
 
@@ -39,7 +39,7 @@ The submission now consists of three C programs and one shared header.
   [\texttt{A5 5A}][\texttt{session\_id}][\texttt{packet\_index}][\texttt{packet\_count}][\texttt{payload\_len}][\texttt{payload}][\texttt{crc16}].
 \]
 \[
-\begin{array}{l|c|c|c|c|c|c}
+\begin{array}{l|c|c|c|c|c|c|c}
 \textbf{Field} & \texttt{SYNC} & \texttt{SESSION} & \texttt{PACKET\_IDX} & \texttt{PACKET\_CNT} & \texttt{PL\_LEN} & \texttt{PAYLOAD} \;|\; \texttt{CRC16} \\
 \hline
 \textbf{Length} & 2\text{ B} & 2\text{ B} & 2\text{ B} & 2\text{ B} & 1\text{ B} & 0\text{--}64\text{ B} \;|\; 2\text{ B}
@@ -57,9 +57,9 @@ The sender then transmits the resulting byte stream one bit per time slot.
 On our test machine, the threshold tuner consistently produced two clusters. A short calibration log is included with the submission in \nolinkurl{report_assets/threshold_measurements.txt}, and the raw samples behind the paper-style distribution in Figure~\ref{fig:threshold-dist} are saved in \nolinkurl{report_assets/threshold_distribution.csv}. In the later portion of the tuner log, the non-flushed average settles around \SIrange{360}{370}{cycles}, while the flushed average settles around \SIrange{815}{820}{cycles}. We therefore used \SI{600}{cycles} as the receiver threshold. This choice is conservative, but it sits in the gap between the two groups and worked well in our tests.
 \end{sloppypar}
 
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.94\linewidth]{report_assets/threshold_distribution.png}
+    \includegraphics[width=0.90\linewidth]{report_assets/threshold_distribution.png}
     \caption{Distribution of isolated \texttt{ecvt\_r} probe times collected with the same flush/non-flush experiment as \texttt{threshold.c}. The plot is intentionally styled after the load-time distribution figure in the original Flush+Reload paper, but it is generated from our own measurements. We collected 5000 flushed samples and 5000 non-flushed samples. The non-flushed accesses cluster near \SI{350}{cycles}, while the flushed accesses peak near \SI{730}{cycles} and show a longer tail.}
     \label{fig:threshold-dist}
 \end{figure}
@@ -68,9 +68,9 @@ The threshold is still machine-dependent. Nothing in the higher-level packet pro
 
 These calibration numbers are not supposed to match the plot in Figure~\ref{fig:probe-trace}. Figure~\ref{fig:threshold-dist} shows isolated single-call timings. Figure~\ref{fig:probe-trace} shows slot-level average probe times while the packetized sender is actively running. During a \texttt{0} bit, the sender keeps flushing the target throughout the slot, so the observed average becomes much larger than the single-flush calibration number.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.92\linewidth]{report_assets/probe_trace.png}
+    \includegraphics[width=0.90\linewidth]{report_assets/probe_trace.png}
     \caption{Probe-time measurements for \texttt{ecvt\_r} over 120 consecutive time slots while the sender transmits a 61-byte packetized message at \SI{5}{ms} per bit. The figure follows the style of the probe-time plot in the original Flush+Reload paper, but it is generated from our own implementation and our own measurements. On this run the hot cluster stays near \SI{375}{cycles}, while the flushed cluster rises to roughly \SI{1.8e3}{cycles}.}
     \label{fig:probe-trace}
 \end{figure}
@@ -96,10 +96,10 @@ To measure the updated protocol, we started the receiver, launched the sender, a
         \toprule
         Bit dur. (ms) & Ideal goodput (bps) & Completion time (s) & Completion rate (bps) & Notes \\
         \midrule
-        10 & 58.1 & 9.19 & 53.1 & Stable \\
-        5  & 116.2 & 4.66 & 104.8 & Stable \\
-        2  & 290.5 & 2.11 & 230.9 & Works well \\
-        1  & 581.0 & 1.69 & 288.8 & Higher variance \\
+        10 & 58.1 & 9.19 & 63.2 & Stable\\
+        5  & 116.2 & 4.66 & 124.7 & Stable\\
+        2  & 290.5 & 2.11 & 275.3 & Works Well\\
+        1  & 581.0 & 1.69 & 343.8 & Higher variance\\
         \bottomrule
     \end{tabular}%
     }
@@ -107,14 +107,14 @@ To measure the updated protocol, we started the receiver, launched the sender, a
     \label{tab:bandwidth}
 \end{table}
 
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.82\linewidth]{report_assets/bandwidth_sweep.png}
+    \includegraphics[width=0.80\linewidth]{report_assets/bandwidth_sweep.png}
     \caption{Ideal cycle-limited payload goodput versus observed completion rate for the packetized protocol. The two curves remain close at \SI{10}{ms} and \SI{5}{ms}. At \SI{2}{ms} and especially \SI{1}{ms}, the message still arrives, but the receiver spends more time waiting for the missing packets that complete the set.}
     \label{fig:bandwidth}
 \end{figure}
 
-The behavior is different from the earlier single-frame version, and that is expected. Once the message is packetized, the receiver no longer needs one perfectly decoded frame. It only needs one valid copy of each packet. This improves robustness, especially when the receiver starts in the middle of a transmission. At the same time, there is more protocol overhead: headers, CRC, and packet boundaries all cost bits. That is the tradeoff.
+Once the message is packetized, the receiver no longer needs one perfectly decoded frame. It only needs one valid copy of each packet. This improves robustness, especially when the receiver starts in the middle of a transmission. At the same time, there is more protocol overhead: headers, CRC, and packet boundaries all cost bits. That is the tradeoff.
 
 On our machine, \SI{5}{ms} is a comfortable setting. It delivered the full 61-byte message in about \SI{4.66}{s}, which corresponds to roughly \SI{105}{bps} of useful payload. \SI{2}{ms} still worked well and brought the completion time down to about \SI{2.11}{s}. At \SI{1}{ms}, the protocol still completed in our tests, but the timing was clearly less stable. This is exactly the kind of behavior the packet design was meant to improve: instead of failing catastrophically, the receiver can wait for whichever packet did not arrive cleanly on the first pass.
 
