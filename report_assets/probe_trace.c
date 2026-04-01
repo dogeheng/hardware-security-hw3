@@ -37,7 +37,6 @@ static size_t encode_packet(unsigned char *dst,
                             uint16_t session_id,
                             uint16_t packet_index,
                             uint16_t packet_count,
-                            unsigned char flags,
                             const unsigned char *payload,
                             unsigned char payload_len) {
     unsigned char *header = dst + 2;
@@ -46,11 +45,10 @@ static size_t encode_packet(unsigned char *dst,
     dst[0] = CHANNEL_SYNC_BYTE0;
     dst[1] = CHANNEL_SYNC_BYTE1;
 
-    header[0] = make_version_flags(flags);
-    write_u16le(header + 1, session_id);
-    write_u16le(header + 3, packet_index);
-    write_u16le(header + 5, packet_count);
-    header[7] = payload_len;
+    write_u16le(header + 0, session_id);
+    write_u16le(header + 2, packet_index);
+    write_u16le(header + 4, packet_count);
+    header[6] = payload_len;
 
     if (payload_len > 0) {
         memcpy(header + PACKET_HEADER_BYTES, payload, payload_len);
@@ -138,20 +136,11 @@ int main(int argc, char *argv[]) {
             size_t remaining = (offset < msg_len) ? (msg_len - offset) : 0;
             unsigned char payload_len =
                 (remaining > packet_payload) ? (unsigned char)packet_payload : (unsigned char)remaining;
-            unsigned char flags = 0;
-
-            if (packet_index == 0) {
-                flags |= FLAG_START;
-            }
-            if (packet_index + 1 == packet_count) {
-                flags |= FLAG_END;
-            }
 
             cycle_offset += encode_packet(cycle + cycle_offset,
                                           session_id,
                                           packet_index,
                                           packet_count,
-                                          flags,
                                           message + offset,
                                           payload_len);
         }

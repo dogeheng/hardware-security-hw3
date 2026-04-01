@@ -23,8 +23,6 @@ typedef struct {
     uint16_t session_id;
     uint16_t packet_count;
     unsigned int stored_packets;
-    int saw_start;
-    int saw_end;
     int announced_complete;
     unsigned char *received;
     unsigned char *payload_lens;
@@ -96,7 +94,7 @@ static void maybe_print_complete_message(reassembly_state_t *state) {
     if (!state->active || state->announced_complete) {
         return;
     }
-    if (!state->saw_start || !state->saw_end || state->stored_packets != state->packet_count) {
+    if (state->stored_packets != state->packet_count) {
         return;
     }
 
@@ -126,7 +124,6 @@ static void store_packet(reassembly_state_t *state,
                          uint16_t session_id,
                          uint16_t packet_index,
                          uint16_t packet_count,
-                         unsigned char flags,
                          const unsigned char *payload,
                          unsigned char payload_len) {
     if (!state->active || state->session_id != session_id || state->packet_count != packet_count) {
@@ -142,13 +139,6 @@ static void store_packet(reassembly_state_t *state,
         return;
     }
 
-    if (flags & FLAG_START) {
-        state->saw_start = 1;
-    }
-    if (flags & FLAG_END) {
-        state->saw_end = 1;
-    }
-
     if (!state->received[packet_index]) {
         unsigned char *dst = state->payloads + (size_t)packet_index * MAX_PACKET_PAYLOAD;
         if (payload_len > 0) {
@@ -158,10 +148,9 @@ static void store_packet(reassembly_state_t *state,
         state->received[packet_index] = 1;
         state->stored_packets++;
 
-        printf("[Receiver] Packet %u/%u stored flags=0x%02x len=%u progress=%u/%u\n",
+        printf("[Receiver] Packet %u/%u stored len=%u progress=%u/%u\n",
                packet_index + 1,
                packet_count,
-               flags,
                payload_len,
                state->stored_packets,
                state->packet_count);
@@ -291,13 +280,10 @@ int main(int argc, char *argv[]) {
         if (parse_state == READ_HEADER) {
             header[byte_index++] = completed;
             if (byte_index == PACKET_HEADER_BYTES) {
-                unsigned char version = packet_version(header[0]);
-                packet_payload_len = header[7];
-                uint16_t packet_count = read_u16le(header + 5);
+                packet_payload_len = header[6];
+                uint16_t packet_count = read_u16le(header + 4);
 
-                if (version != PROTOCOL_VERSION ||
-                    packet_payload_len > MAX_PACKET_PAYLOAD ||
-                    packet_count == 0) {
+                if (packet_payload_len > MAX_PACKET_PAYLOAD || packet_count == 0) {
                     reset_packet_parser(&parse_state, &sync_reg, &current_byte, &bit_count, &byte_index, &packet_payload_len);
                     continue;
                 }
@@ -326,7 +312,6 @@ int main(int argc, char *argv[]) {
                 uint16_t session_id;
                 uint16_t packet_index;
                 uint16_t packet_count;
-                unsigned char flags;
 
                 memcpy(packet_blob, header, PACKET_HEADER_BYTES);
                 if (packet_payload_len > 0) {
@@ -335,17 +320,15 @@ int main(int argc, char *argv[]) {
                 computed_crc = crc16_ccitt(packet_blob, PACKET_HEADER_BYTES + packet_payload_len);
 
                 if (computed_crc == received_crc) {
-                    session_id = read_u16le(header + 1);
-                    packet_index = read_u16le(header + 3);
-                    packet_count = read_u16le(header + 5);
-                    flags = packet_flags(header[0]);
+                    session_id = read_u16le(header + 0);
+                    packet_index = read_u16le(header + 2);
+                    packet_count = read_u16le(header + 4);
 
                     if (packet_index < packet_count) {
                         store_packet(&reassembly,
                                      session_id,
                                      packet_index,
                                      packet_count,
-                                     flags,
                                      payload,
                                      packet_payload_len);
                     }
