@@ -1,0 +1,12 @@
+# build outputs
+sender
+receiver
+threshold
+*.o
+
+# LaTeX auxiliary
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
